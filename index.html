@@ -127,12 +127,15 @@
 
   <script>
     const targetUTC = Date.UTC(2025, 3, 14, 18, 30, 0); // April = 3, 14th at 18:30 UTC = 15 April 12AM IST
-
+    const nowUTC = Date.now();
+    console.log("✅ Target UTC:", new Date(targetUTC).toISOString());
+    console.log("🕒 Now UTC:", new Date(nowUTC).toISOString());
+    console.log("⌛ Diff (hours):", (targetUTC - nowUTC) / (1000 * 60 * 60));
     function updateCountdown() {
       const nowUTC = Date.now(); // current UTC timestamp
-      console.log("Target UTC:", new Date(targetUTC).toISOString());
-      console.log("Now UTC:", new Date(nowUTC).toISOString());
-      console.log("Diff in hours:", (targetUTC - nowUTC) / 3600000);
+      // console.log("Target UTC:", new Date(targetUTC).toISOString());
+      // console.log("Now UTC:", new Date(nowUTC).toISOString());
+      // console.log("Diff in hours:", (targetUTC - nowUTC) / 3600000);
 
       const diff = targetUTC - nowUTC;
 
