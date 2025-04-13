@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy 22nd cutiee <3</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 300px;
+        }
+        #info h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            color: #66ccff;
+            letter-spacing: 1px;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+        }
+        #play-audio {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: #66ccff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 8px #66ccff;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div id="info">
+        <h2>Happy 22nd cutiee <3</h2>
+        <p>I LOVE YOUUU SOOOO MUCCHHHHH</p>
+        <p>Viewing from: <span id="view-mode">Outside</span></p>
+        <p>Controls: Drag to rotate, scroll to zoom</p>
+        <p>Press <strong>V</strong> to view from Earth! (changes view-mode xD)</p>
+    </div>
+    <button id="play-audio">Click to hear something special hehee 💖</button>
+    <div id="loading">Loading celestial objects...</div>
+    <div id="tooltip" class="tooltip"></div>
+    <audio id="birthday-audio" src="assets/message.mp3"></audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.150.1/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script>
+        const container = document.getElementById('canvas-container');
+        const loadingElement = document.getElementById('loading');
+        const viewModeElement = document.getElementById('view-mode');
+        const tooltip = document.getElementById('tooltip');
+        const audio = document.getElementById('birthday-audio');
+        document.getElementById('play-audio').addEventListener('click', () => audio.play());
+
+        let starsMesh, planetsMesh, planetLabels = [], youLabel, planetOrbits;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let rotationSpeed = 0.005;
+        let autoRotate = true;
+        let viewFromInside = false;
+        const starSize = 0.05, planetSize = 0.2, brightnessFactor = 3;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000);
+        container.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+
+        const planetColors = {
+            "MERCURY": 0xB5A7A7,
+            "VENUS": 0xE8D9A0,
+            "EARTH": 0x4B70DD,
+            "MARS": 0xD68759,
+            "JUPITER": 0xE3B45C,
+            "SATURN": 0xEAD6A9,
+            "URANUS": 0xA5D5D8,
+            "NEPTUNE": 0x5C84D8,
+            "PLUTO": 0xB7A9A9
+        };
+
+        function loadCSV(path, callback) {
+            fetch(path)
+                .then(res => res.text())
+                .then(data => callback(data));
+        }
+
+        function renderStars(data) {
+            const parsed = Papa.parse(data, { header: true, skipEmptyLines: true }).data;
+            const positions = [], colors = [];
+
+            parsed.forEach(star => {
+                const ra = parseFloat(star["RA(deg)"]) * (Math.PI / 180);
+                const dec = parseFloat(star["Dec(deg)"]) * (Math.PI / 180);
+                const mag = parseFloat(star["VTMag"]);
+                if (isNaN(ra) || isNaN(dec) || isNaN(mag)) return;
+
+                const dist = 4;
+                const x = dist * Math.cos(dec) * Math.cos(ra);
+                const y = dist * Math.sin(dec);
+                const z = dist * Math.cos(dec) * Math.sin(ra);
+                positions.push(x, y, z);
+
+                const adjustedMag = Math.max(mag / brightnessFactor, 0.5);
+                const normalizedMag = Math.min(Math.max((adjustedMag - 0.5) / 5, 0), 1);
+                const r = 0.5 + 0.5 * (1 - normalizedMag);
+                const g = 0.7 + 0.3 * (1 - normalizedMag);
+                const b = 1.0;
+                colors.push(r, g, b);
+            });
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: starSize,
+                vertexColors: true,
+                sizeAttenuation: true,
+                map: createStarTexture(),
+                transparent: true,
+                alphaTest: 0.01
+            });
+
+            starsMesh = new THREE.Points(geometry, material);
+            scene.add(starsMesh);
+        }
+
+        function renderPlanets(data) {
+            const parsed = Papa.parse(data, { header: true, skipEmptyLines: true }).data;
+            const group = new THREE.Group();
+
+            parsed.forEach(planet => {
+                const ra = parseFloat(planet["RA (deg)"]) * (Math.PI / 180);
+                const dec = parseFloat(planet["Dec (deg)"]) * (Math.PI / 180);
+                if (isNaN(ra) || isNaN(dec)) return;
+
+                const dist = 3;
+                const x = dist * Math.cos(dec) * Math.cos(ra);
+                const y = dist * Math.sin(dec);
+                const z = dist * Math.cos(dec) * Math.sin(ra);
+
+                let planetName = planet.Planet || "";
+                if (planetName.includes(" ")) {
+                    const parts = planetName.split(" ");
+                    for (let i = 0; i < parts.length; i++) {
+                        if (Object.keys(planetColors).some(key => parts[i].includes(key))) {
+                            planetName = parts[i];
+                            break;
+                        }
+                    }
+                }
+
+                const color = planetColors[planetName.toUpperCase()] || 0xffffff;
+                const mesh = new THREE.Mesh(
+                    new THREE.SphereGeometry(planetSize, 16, 16),
+                    new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: 0.3 })
+                );
+                mesh.position.set(x, y, z);
+                group.add(mesh);
+
+                createPlanetLabel(planetName, x, y + 0.3, z);
+            });
+
+            // Add central Earth as "You"
+            const earthColor = planetColors.EARTH;
+            const you = new THREE.Mesh(
+                new THREE.SphereGeometry(planetSize * 1.2, 16, 16),
+                new THREE.MeshLambertMaterial({ color: earthColor, emissive: earthColor, emissiveIntensity: 0.4 })
+            );
+            you.position.set(0, 0, 0);
+            group.add(you);
+            
+            // Create the "You" label and store its reference separately
+            youLabel = createPlanetLabel("You", 0, 0.3, 0, true);
+
+            planetsMesh = group;
+            scene.add(planetsMesh);
+        }
+
+        function createPlanetLabel(text, x, y, z, isYouLabel = false) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 128;
+            const context = canvas.getContext('2d');
+            context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.font = '24px Arial';
+            context.fillStyle = 'white';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, canvas.width / 2, canvas.height / 2);
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const label = new THREE.Sprite(spriteMaterial);
+            label.position.set(x, y, z);
+            label.scale.set(0.5, 0.25, 1);
+            scene.add(label);
+            
+            // Only add regular planet labels to planetLabels array
+            if (!isYouLabel) {
+                planetLabels.push(label);
+            }
+            
+            return label;
+        }
+
+        function createStarTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 64, 64);
+            const texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        function toggleViewPosition() {
+            viewFromInside = !viewFromInside;
+            viewModeElement.textContent = viewFromInside ? "Inside" : "Outside";
+            camera.position.set(0, 0, viewFromInside ? 0 : 5);
+            rotationSpeed = viewFromInside ? -Math.abs(rotationSpeed) : Math.abs(rotationSpeed);
+
+            // Hide "You" label when viewing from inside
+            if (youLabel) {
+                youLabel.visible = !viewFromInside;
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        container.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+            autoRotate = false;
+        });
+        container.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaMove = {
+                    x: e.clientX - previousMousePosition.x,
+                    y: e.clientY - previousMousePosition.y
+                };
+                scene.rotation.y += deltaMove.x * 0.01;
+                scene.rotation.x += deltaMove.y * 0.01;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            }
+        });
+        container.addEventListener('mouseup', () => { isDragging = false; });
+        container.addEventListener('mouseleave', () => { isDragging = false; tooltip.style.display = 'none'; });
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (!viewFromInside) {
+                camera.position.z += e.deltaY * 0.01;
+                camera.position.z = Math.max(1, Math.min(10, camera.position.z));
+            }
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'v') toggleViewPosition();
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (autoRotate) scene.rotation.y += rotationSpeed;
+            
+            // Update all planet labels to face the camera
+            planetLabels.forEach(label => label.lookAt(camera.position));
+            
+            // Update "You" label separately if it exists
+            if (youLabel) {
+                youLabel.lookAt(camera.position);
+            }
+            
+            renderer.render(scene, camera);
+            loadingElement.style.display = 'none';
+        }
+
+        loadCSV('assets/stars_mysore_15_april_2003.csv', renderStars);
+        loadCSV('assets/planets_mysore_april15_2003.csv', renderPlanets);
+        animate();
+    </script>
+</body>
+</html>

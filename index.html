@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Birthday Gift Countdown</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #1a0033;
+      font-family: 'Poppins', sans-serif;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #330033, #660066);
+    }
+
+    .container {
+      text-align: center;
+      z-index: 10;
+    }
+
+    .message {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      text-shadow: 0 0 10px rgba(255, 105, 180, 0.7);
+    }
+
+    .countdown {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+
+    .countdown-box {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 1rem;
+      width: 100px;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 0 15px rgba(255, 105, 180, 0.5);
+      border: 2px solid rgba(255, 105, 180, 0.3);
+    }
+
+    .countdown-value {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #FF69B4;
+      text-shadow: 0 0 5px rgba(255, 105, 180, 0.7);
+    }
+
+    .countdown-label {
+      font-size: 1rem;
+      opacity: 0.8;
+    }
+
+    .heart {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23FF69B4"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>') no-repeat center center;
+      opacity: 0;
+      z-index: 1;
+    }
+
+    @media (max-width: 768px) {
+      .message {
+        font-size: 1.5rem;
+      }
+
+      .countdown {
+        flex-wrap: wrap;
+      }
+
+      .countdown-box {
+        width: 70px;
+      }
+
+      .countdown-value {
+        font-size: 2rem;
+      }
+    }
+
+    .reveal-text {
+      font-size: 1.2rem;
+      margin-top: 3rem;
+      opacity: 0.8;
+      max-width: 80%;
+      text-align: center;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="message">YOUR GIFT WILL BE REVEALED IN:</h1>
+    <div class="countdown">
+      <div class="countdown-box">
+        <div id="days" class="countdown-value">00</div>
+        <div class="countdown-label">Days</div>
+      </div>
+      <div class="countdown-box">
+        <div id="hours" class="countdown-value">00</div>
+        <div class="countdown-label">Hours</div>
+      </div>
+      <div class="countdown-box">
+        <div id="minutes" class="countdown-value">00</div>
+        <div class="countdown-label">Minutes</div>
+      </div>
+      <div class="countdown-box">
+        <div id="seconds" class="countdown-value">00</div>
+        <div class="countdown-label">Seconds</div>
+      </div>
+    </div>
+    <p class="reveal-text">Get ready for something special! A universe of love awaits you on your 22nd birthday.</p>
+  </div>
+
+  <script>
+    const targetUTC = Date.UTC(2025, 3, 14, 18, 30, 0); // April = 3, 14th at 18:30 UTC = 15 April 12AM IST
+
+    function updateCountdown() {
+      const nowUTC = Date.now(); // current UTC timestamp
+      console.log("Target UTC:", new Date(targetUTC).toISOString());
+      console.log("Now UTC:", new Date(nowUTC).toISOString());
+      console.log("Diff in hours:", (targetUTC - nowUTC) / 3600000);
+
+      const diff = targetUTC - nowUTC;
+
+      if (diff <= 0) {
+        window.location.href = 'gift.html';
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      document.getElementById('days').innerText = days.toString().padStart(2, '0');
+      document.getElementById('hours').innerText = hours.toString().padStart(2, '0');
+      document.getElementById('minutes').innerText = minutes.toString().padStart(2, '0');
+      document.getElementById('seconds').innerText = seconds.toString().padStart(2, '0');
+    }
+
+    function createHearts() {
+      const heartCount = 20;
+      const container = document.body;
+
+      for (let i = 0; i < heartCount; i++) {
+        const heart = document.createElement('div');
+        heart.className = 'heart';
+
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.top = Math.random() * 100 + 'vh';
+
+        const size = Math.random() * 30 + 20;
+        heart.style.width = size + 'px';
+        heart.style.height = size + 'px';
+
+        heart.style.opacity = Math.random() * 0.5 + 0.3;
+
+        container.appendChild(heart);
+        animateHeart(heart);
+      }
+    }
+
+    function animateHeart(heart) {
+      const duration = Math.random() * 15000 + 10000;
+      const startX = parseFloat(heart.style.left);
+      const startY = parseFloat(heart.style.top);
+
+      let startTime = null;
+
+      function frame(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        const currentX = startX + Math.sin(progress * 6) * 10;
+        const currentY = startY - (startY + 10) * progress;
+
+        heart.style.transform = `translate(${Math.sin(progress * 4) * 20}px, 0)`;
+        heart.style.left = currentX + 'vw';
+        heart.style.top = currentY + 'vh';
+
+        if (progress < 1) {
+          requestAnimationFrame(frame);
+        } else {
+          heart.style.left = Math.random() * 100 + 'vw';
+          heart.style.top = '110vh';
+          animateHeart(heart);
+        }
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    createHearts();
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+
+    const countdownBoxes = document.querySelectorAll('.countdown-box');
+    countdownBoxes.forEach(box => {
+      setInterval(() => {
+        box.style.boxShadow = '0 0 25px rgba(255, 105, 180, 0.7)';
+        setTimeout(() => {
+          box.style.boxShadow = '0 0 15px rgba(255, 105, 180, 0.5)';
+        }, 500);
+      }, 3000);
+    });
+  </script>
+</body>
+</html>
